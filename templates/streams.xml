@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Response>
+  <Connect>
+    <Stream url="wss://ai-interpreter-voycelink.azurewebsites.net/streams">
+      <Parameter name="Language1" value="Spanish" />
+      <Parameter name="Language2" value="English" />
+    </Stream>
+  </Connect>
+  <Say>The interpreter session has ended. Goodbye.</Say>
+</Response>
