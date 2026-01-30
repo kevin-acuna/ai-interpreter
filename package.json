@@ -16,7 +16,11 @@
     "url": ""
   },
   "homepage": "",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "httpdispatcher": "^2.1.2",
     "websocket": "^1.0.28"
   }

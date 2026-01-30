@@ -6,7 +6,7 @@ const WebSocketServer = require("websocket").server;
 const WebSocketClient = require("websocket").client;
 const { INTERPRETER_PROMPT } = require("./constants.js");
 
-process.loadEnvFile();
+require("dotenv").config();
 
 const dispatcher = new HttpDispatcher();
 const wsserver = http.createServer(handleRequest);
