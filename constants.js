@@ -1,16 +1,22 @@
 const langs = require("langs");
 
 function getLanguageName(isoCode) {
-  if (!isoCode) return isoCode;
+  if (!isoCode) {
+    console.log("[getLanguageName] isoCode is null/undefined");
+    return isoCode;
+  }
   const lang = langs.where("3", isoCode.toLowerCase());
+  console.log(`[getLanguageName] ISO: "${isoCode}" -> Found: ${lang ? JSON.stringify(lang) : "null"} -> Name: "${lang ? lang.name : isoCode}"`);
   return lang ? lang.name : isoCode;
 }
 
 function generateInterpreterPrompt(language1, language2) {
+  console.log(`[generateInterpreterPrompt] Received ISO codes: language1="${language1}", language2="${language2}"`);
   const lang1Name = getLanguageName(language1);
   const lang2Name = getLanguageName(language2);
+  console.log(`[generateInterpreterPrompt] Converted names: lang1Name="${lang1Name}", lang2Name="${lang2Name}"`);
 
-  return `You are a professional, neutral, and precise AI Interpreter. Your role is to bridge the communication gap between a ${lang1Name}-speaking user and a ${lang2Name}-speaking user.
+  const prompt = `You are a professional, neutral, and precise AI Interpreter. Your role is to bridge the communication gap between a ${lang1Name}-speaking user and a ${lang2Name}-speaking user.
 
 ## Core Instructions:
 1.  **Bidirectional Translation:**
@@ -41,6 +47,10 @@ function generateInterpreterPrompt(language1, language2) {
 - Wait for user's cue in each round.
 - Emphasize real-world, natural phrasing, not literal translation when possible.
 - Maintain a calm, professional tone throughout.`;
+
+  console.log(`[generateInterpreterPrompt] Prompt length: ${prompt.length} chars`);
+  console.log(`[generateInterpreterPrompt] First 200 chars: ${prompt.substring(0, 200)}...`);
+  return prompt;
 }
 
 module.exports = { generateInterpreterPrompt, getLanguageName };

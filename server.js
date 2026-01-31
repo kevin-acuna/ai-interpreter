@@ -166,8 +166,13 @@ class MediaStream {
 
   configureSession() {
     this.sessionConfigured = true;
+    log("=== CONFIGURING SESSION ===");
+    log("ISO codes received:", this.language1, "->", this.language2);
     const interpreterPrompt = generateInterpreterPrompt(this.language1, this.language2);
     log("Prompt generated for languages:", this.language1, "->", this.language2);
+    log("=== PROMPT SENT TO OPENAI ===");
+    log(interpreterPrompt);
+    log("=== END PROMPT ===");
     const sessionConfig = {
       type: "session.update",
       session: {
