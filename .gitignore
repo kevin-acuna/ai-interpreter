@@ -38,3 +38,5 @@ rtmbot.conf
 
 #Env variables
 .env
+
+prompts_versions.js
