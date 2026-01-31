@@ -4,7 +4,7 @@ const http = require("http");
 const HttpDispatcher = require("httpdispatcher");
 const WebSocketServer = require("websocket").server;
 const WebSocketClient = require("websocket").client;
-const { INTERPRETER_PROMPT } = require("./constants.js");
+const { generateInterpreterPrompt } = require("./constants.js");
 
 require("dotenv").config();
 
@@ -125,6 +125,9 @@ class MediaStream {
     this.streamSid = null;
     this.hasSeenMedia = false;
     this.audioBuffer = [];
+    this.language1 = "eng";
+    this.language2 = "spa";
+    this.sessionConfigured = false;
     
     twilioConnection.on("message", this.processTwilioMessage.bind(this));
     twilioConnection.on("close", this.close.bind(this));
@@ -153,9 +156,6 @@ class MediaStream {
       });
 
       connection.on("message", this.processOpenAIMessage.bind(this));
-
-      // Configure the session
-      this.configureSession();
     });
 
     client.connect(OPENAI_REALTIME_URL, null, null, {
@@ -165,11 +165,14 @@ class MediaStream {
   }
 
   configureSession() {
+    this.sessionConfigured = true;
+    const interpreterPrompt = generateInterpreterPrompt(this.language1, this.language2);
+    log("Prompt generated for languages:", this.language1, "->", this.language2);
     const sessionConfig = {
       type: "session.update",
       session: {
         modalities: ["text", "audio"],
-        instructions: INTERPRETER_PROMPT,
+        instructions: interpreterPrompt,
         voice: "marin",
         input_audio_format: "g711_ulaw",
         output_audio_format: "g711_ulaw",
@@ -200,6 +203,14 @@ class MediaStream {
       case "start":
         log("From Twilio: Start event received", data.start);
         this.streamSid = data.start.streamSid;
+        if (data.start.customParameters) {
+          this.language1 = data.start.customParameters.Language1 || "eng";
+          this.language2 = data.start.customParameters.Language2 || "spa";
+          log("Languages configured:", this.language1, "->", this.language2);
+        }
+        if (this.openaiConnection && !this.sessionConfigured) {
+          this.configureSession();
+        }
         break;
 
       case "media":
@@ -241,6 +252,9 @@ class MediaStream {
     switch (data.type) {
       case "session.created":
         log("✅ Sesión OpenAI creada");
+        if (this.streamSid && !this.sessionConfigured) {
+          this.configureSession();
+        }
         break;
 
       case "session.updated":

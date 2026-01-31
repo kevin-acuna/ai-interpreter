@@ -2,8 +2,8 @@
 <Response>
   <Connect>
     <Stream url="wss://ai-interpreter-voycelink.azurewebsites.net/streams">
-      <Parameter name="Language1" value="Spanish" />
-      <Parameter name="Language2" value="English" />
+      <Parameter name="Language1" value="fra" />
+      <Parameter name="Language2" value="eng" />
     </Stream>
   </Connect>
   <Say>The interpreter session has ended. Goodbye.</Say>
