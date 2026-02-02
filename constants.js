@@ -1,5 +1,25 @@
 const langs = require("langs");
 
+// AI Agents staff - each with unique name, interpreterId and voice
+const AI_AGENTS = [
+  { name: "Alloy", interpreterId: "4721", voice: "alloy" },
+  { name: "Ash", interpreterId: "3842", voice: "ash" },
+  { name: "Ballad", interpreterId: "5163", voice: "ballad" },
+  { name: "Cedar", interpreterId: "7384", voice: "cedar" },
+  { name: "Coral", interpreterId: "2954", voice: "coral" },
+  { name: "Echo", interpreterId: "6087", voice: "echo" },
+  { name: "Marin", interpreterId: "5028", voice: "marin" },
+  { name: "Sage", interpreterId: "1739", voice: "sage" },
+  { name: "Shimmer", interpreterId: "8265", voice: "shimmer" },
+  { name: "Verse", interpreterId: "9471", voice: "verse" },
+];
+
+function getRandomAgent() {
+  const agent = AI_AGENTS[Math.floor(Math.random() * AI_AGENTS.length)];
+  console.log(`[getRandomAgent] Selected agent: ${agent.name} (ID: ${agent.interpreterId}, voice: ${agent.voice})`);
+  return agent;
+}
+
 function getLanguageName(isoCode) {
   if (!isoCode) {
     console.log("[getLanguageName] isoCode is null/undefined");
@@ -10,8 +30,9 @@ function getLanguageName(isoCode) {
   return lang ? lang.name : isoCode;
 }
 
-function generateInterpreterPrompt(language1, language2) {
+function generateInterpreterPrompt(language1, language2, agent) {
   console.log(`[generateInterpreterPrompt] Received ISO codes: language1="${language1}", language2="${language2}"`);
+  console.log(`[generateInterpreterPrompt] Agent: ${agent.name} (ID: ${agent.interpreterId})`);
   const lang1Name = getLanguageName(language1);
   const lang2Name = getLanguageName(language2);
   console.log(`[generateInterpreterPrompt] Converted names: lang1Name="${lang1Name}", lang2Name="${lang2Name}"`);
@@ -31,7 +52,7 @@ function generateInterpreterPrompt(language1, language2) {
 4. If user speaks a language other than ${lang1Name} or ${lang2Name} → Say in English: "Sorry, I can only interpret ${lang1Name} and ${lang2Name}."
 
 ## FIRST TURN ONLY:
-Say: "Hello, I am your interpreter." Then STOP and wait silently.
+Say ONLY in English (do NOT translate this greeting): "Good evening, my name is ${agent.name}, interpreter ID ${agent.interpreterId}, and I will be your interpreter. Please speak in clear, short sentences so that I can interpret everything." Then STOP and wait silently.
 
 ## STYLE:
 - Calm, professional tone.
@@ -51,4 +72,4 @@ Say: "Hello, I am your interpreter." Then STOP and wait silently.
   return prompt;
 }
 
-module.exports = { generateInterpreterPrompt, getLanguageName };
+module.exports = { generateInterpreterPrompt, getLanguageName, getRandomAgent, AI_AGENTS };

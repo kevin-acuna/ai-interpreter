@@ -4,7 +4,7 @@ const http = require("http");
 const HttpDispatcher = require("httpdispatcher");
 const WebSocketServer = require("websocket").server;
 const WebSocketClient = require("websocket").client;
-const { generateInterpreterPrompt } = require("./constants.js");
+const { generateInterpreterPrompt, getRandomAgent } = require("./constants.js");
 
 require("dotenv").config();
 
@@ -128,6 +128,8 @@ class MediaStream {
     this.language1 = "eng";
     this.language2 = "spa";
     this.sessionConfigured = false;
+    this.agent = getRandomAgent();
+    log(`AI Agent assigned: ${this.agent.name} (ID: ${this.agent.interpreterId}, voice: ${this.agent.voice})`);
     
     twilioConnection.on("message", this.processTwilioMessage.bind(this));
     twilioConnection.on("close", this.close.bind(this));
@@ -168,7 +170,8 @@ class MediaStream {
     this.sessionConfigured = true;
     log("=== CONFIGURING SESSION ===");
     log("ISO codes received:", this.language1, "->", this.language2);
-    const interpreterPrompt = generateInterpreterPrompt(this.language1, this.language2);
+    log(`Agent: ${this.agent.name} (ID: ${this.agent.interpreterId}, voice: ${this.agent.voice})`);
+    const interpreterPrompt = generateInterpreterPrompt(this.language1, this.language2, this.agent);
     log("Prompt generated for languages:", this.language1, "->", this.language2);
     log("=== PROMPT SENT TO OPENAI ===");
     log(interpreterPrompt);
@@ -178,7 +181,7 @@ class MediaStream {
       session: {
         modalities: ["text", "audio"],
         instructions: interpreterPrompt,
-        voice: "marin",
+        voice: this.agent.voice,
         input_audio_format: "g711_ulaw",
         output_audio_format: "g711_ulaw",
         turn_detection: {
