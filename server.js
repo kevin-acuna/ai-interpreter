@@ -12,8 +12,9 @@ const dispatcher = new HttpDispatcher();
 const wsserver = http.createServer(handleRequest);
 
 const HTTP_SERVER_PORT = process.env.PORT || 8080;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+const AZURE_API_KEY = process.env.AZURE_API_KEY;
+const TARGET_URL = process.env.TARGET_URL;
+const VOICE_SPEED = parseFloat(process.env.VOICE_SPEED) || 1.2;
 
 // Audio format constants
 const TWILIO_SAMPLE_RATE = 8000;
@@ -151,6 +152,7 @@ class MediaStream {
     this.language2 = "spa";
     this.sessionConfigured = false;
     this.agent = null;
+    this.isAISpeaking = false;
     
     twilioConnection.on("message", this.processTwilioMessage.bind(this));
     twilioConnection.on("close", this.close.bind(this));
@@ -181,9 +183,8 @@ class MediaStream {
       connection.on("message", this.processOpenAIMessage.bind(this));
     });
 
-    client.connect(OPENAI_REALTIME_URL, null, null, {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "OpenAI-Beta": "realtime=v1",
+    client.connect(TARGET_URL, null, null, {
+      "api-key": AZURE_API_KEY,
     });
   }
 
@@ -206,13 +207,19 @@ class MediaStream {
         input_audio_format: "g711_ulaw",
         output_audio_format: "g711_ulaw",
         turn_detection: {
-          type: "semantic_vad",
-          eagerness: "auto",
+          //type: "semantic_vad",
+          //eagerness: "low",
+
+          type: "server_vad",
+          threshold: 0.6,             // Sensibilidad al volumen (0.0 a 1.0)
+          prefix_padding_ms: 300,     // Margen de audio previo capturado
+          silence_duration_ms: 1500   // Silencio requerido para cortar (1000 a 1500ms recomendado)
         },
+
         // input_audio_transcription: {
         //   model: "whisper-1",
         // },
-         speed: 1.2,
+         speed: VOICE_SPEED,
       },
     };
 
@@ -265,7 +272,10 @@ class MediaStream {
         break;
 
       case "mark":
-        log("From Twilio: Mark event received", data.mark);
+        if (data.mark && data.mark.name === "ai-speech-done") {
+          this.isAISpeaking = false;
+          log("🔇 IA terminó de reproducirse en Twilio");
+        }
         break;
 
       case "stop":
@@ -277,6 +287,7 @@ class MediaStream {
 
   forwardAudioToOpenAI(payload) {
     if (!this.openaiConnection) return;
+    if (this.isAISpeaking) return;
 
     // Send mulaw audio directly to OpenAI (no conversion needed with g711_ulaw format)
     const audioEvent = {
@@ -306,7 +317,6 @@ class MediaStream {
 
       case "input_audio_buffer.speech_started":
         log("🎤 Usuario hablando...");
-        this.sendClearMessage();
         break;
 
       case "conversation.item.input_audio_transcription.completed":
@@ -314,7 +324,14 @@ class MediaStream {
         break;
 
       case "response.audio.delta":
+        this.isAISpeaking = true;
         this.forwardAudioToTwilio(data.delta);
+        break;
+
+      case "response.audio.done":
+        // All audio chunks sent - send a mark to Twilio to know when playback finishes
+        this.sendMarkMessage("ai-speech-done");
+        log("� Audio completo enviado, esperando reproducción en Twilio...");
         break;
 
       case "response.audio_transcript.done":
@@ -350,6 +367,17 @@ class MediaStream {
       streamSid: this.streamSid,
     };
     this.twilioConnection.sendUTF(JSON.stringify(clearMessage));
+  }
+
+  sendMarkMessage(markName) {
+    if (!this.twilioConnection || !this.streamSid) return;
+
+    const markMessage = {
+      event: "mark",
+      streamSid: this.streamSid,
+      mark: { name: markName },
+    };
+    this.twilioConnection.sendUTF(JSON.stringify(markMessage));
   }
 
   triggerInitialGreeting() {
