@@ -104,13 +104,35 @@ function handleRequest(request, response) {
 
 dispatcher.onPost("/twiml", function (req, res) {
   log("POST TwiML");
+
+  // Select a random agent for this call
+  const agent = getRandomAgent();
+  log(`Agent selected for call: ${agent.name} (ID: ${agent.interpreterId}, voice: ${agent.voice})`);
+
+  // Read the XML template and inject greeting + agent parameters
   const filePath = path.join(__dirname, "/templates", "streams.xml");
-  const stat = fs.statSync(filePath);
+  let twiml = fs.readFileSync(filePath, "utf8");
+
+  // Build TTS greeting
+  const greeting = `Good morning, my name is ${agent.name}, interpreter ID ${agent.interpreterId}, and I will be your interpreter. Please speak in clear, short sentences so that I can interpret everything.`;
+
+  // Insert <Say> before <Connect>
+  twiml = twiml.replace(
+    "<Connect>",
+    `<Say voice="Polly.Joanna">${greeting}</Say>\n  <Connect>`
+  );
+
+  // Insert agent parameters into <Stream>
+  twiml = twiml.replace(
+    "</Stream>",
+    `  <Parameter name="AgentName" value="${agent.name}" />\n      <Parameter name="AgentVoice" value="${agent.voice}" />\n      <Parameter name="AgentId" value="${agent.interpreterId}" />\n    </Stream>`
+  );
+
   res.writeHead(200, {
     "Content-Type": "text/xml",
-    "Content-Length": stat.size,
+    "Content-Length": Buffer.byteLength(twiml),
   });
-  fs.createReadStream(filePath).pipe(res);
+  res.end(twiml);
 });
 
 mediaws.on("connect", function (connection) {
@@ -128,8 +150,7 @@ class MediaStream {
     this.language1 = "eng";
     this.language2 = "spa";
     this.sessionConfigured = false;
-    this.agent = getRandomAgent();
-    log(`AI Agent assigned: ${this.agent.name} (ID: ${this.agent.interpreterId}, voice: ${this.agent.voice})`);
+    this.agent = null;
     
     twilioConnection.on("message", this.processTwilioMessage.bind(this));
     twilioConnection.on("close", this.close.bind(this));
@@ -216,6 +237,19 @@ class MediaStream {
           this.language1 = data.start.customParameters.Language1 || "eng";
           this.language2 = data.start.customParameters.Language2 || "spa";
           log("Languages configured:", this.language1, "->", this.language2);
+
+          // Read agent from customParameters (injected by /twiml handler)
+          if (data.start.customParameters.AgentName) {
+            this.agent = {
+              name: data.start.customParameters.AgentName,
+              voice: data.start.customParameters.AgentVoice,
+              interpreterId: data.start.customParameters.AgentId,
+            };
+          } else {
+            // Fallback if agent params are missing
+            this.agent = getRandomAgent();
+          }
+          log(`AI Agent: ${this.agent.name} (ID: ${this.agent.interpreterId}, voice: ${this.agent.voice})`);
         }
         if (this.openaiConnection && !this.sessionConfigured) {
           this.configureSession();
@@ -261,7 +295,7 @@ class MediaStream {
     switch (data.type) {
       case "session.created":
         log("✅ Sesión OpenAI creada");
-        if (this.streamSid && !this.sessionConfigured) {
+        if (this.streamSid && this.agent && !this.sessionConfigured) {
           this.configureSession();
         }
         break;

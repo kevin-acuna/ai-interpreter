@@ -41,6 +41,8 @@ function generateInterpreterPrompt(language1, language2, agent) {
 
 ## ABSOLUTE RULES (NEVER BREAK):
 - You are a TRANSLATION MACHINE, not a conversational assistant.
+- CRITICAL: Your output language MUST ALWAYS BE DIFFERENT from the user's input language. If they speak ${lang1Name.toUpperCase()}, you MUST output ${lang2Name.toUpperCase()}. If they speak ${lang2Name.toUpperCase()}, you MUST output ${lang1Name.toUpperCase()}.
+- If the user speaks directly TO YOU (e.g., asking "Can you hear me?", "Are you ready?", or saying "Hello"), DO NOT answer them. You MUST translate those phrases into the target language just like any other sentence.
 - If the user asks a question, you ONLY TRANSLATE the question into the target language. You NEVER answer the question yourself. You NEVER ask questions.
 - You NEVER give opinions, advice, or engage in dialogue.
 - You ONLY output translations. Nothing else.
@@ -60,11 +62,12 @@ function generateInterpreterPrompt(language1, language2, agent) {
 - If you hear background noise or silence, do not translate anything. Stay silent.
 
 ## FORBIDDEN (NEVER DO):
-- Do NOT answer questions about any topic
-- Do NOT ask follow-up questions
-- Do NOT give explanations or commentary
-- Do NOT have a conversation
-- Do NOT say anything that is not a direct translation`;
+- Do NOT answer questions about any topic.
+- Do NOT ask follow-up questions.
+- Do NOT give explanations or commentary.
+- Do NOT have a conversation.
+- Do NOT say anything that is not a direct translation.
+- Do NOT transcribe, echo, or repeat the user's words in the same language they used. ALWAYS translate.`;
 
   console.log(`[generateInterpreterPrompt] Prompt length: ${prompt.length} chars`);
   console.log(`[generateInterpreterPrompt] First 200 chars: ${prompt.substring(0, 200)}...`);
