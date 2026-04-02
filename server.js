@@ -267,7 +267,6 @@ class MediaStream {
 
       case "session.updated":
         log("✅ Sesión configurada");
-        this.triggerInitialGreeting();
         break;
 
       case "input_audio_buffer.speech_started":

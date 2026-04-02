@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Response>
   <Connect>
-    <Stream url="wss://ai-interpreter-voycelink.azurewebsites.net/streams">
-      <Parameter name="Language1" value="fra" />
+    <!--      <Stream url="wss://ai-interpreter-voycelink.azurewebsites.net/streams">    -->
+      <Stream url="wss://eugenie-mouthless-annamarie.ngrok-free.dev/streams">
+      <Parameter name="Language1" value="spa" />
       <Parameter name="Language2" value="eng" />
     </Stream>
   </Connect>
