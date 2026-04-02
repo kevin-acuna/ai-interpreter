@@ -191,6 +191,7 @@ class MediaStream {
         // input_audio_transcription: {
         //   model: "whisper-1",
         // },
+         speed: 1.2,
       },
     };
 
