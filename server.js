@@ -201,25 +201,32 @@ class MediaStream {
     const sessionConfig = {
       type: "session.update",
       session: {
-        modalities: ["text", "audio"],
+        type: "realtime",
+        output_modalities: ["audio"],
         instructions: interpreterPrompt,
-        voice: this.agent.voice,
-        input_audio_format: "g711_ulaw",
-        output_audio_format: "g711_ulaw",
-        turn_detection: {
-          //type: "semantic_vad",
-          //eagerness: "low",
+        audio: {
+          input: {
+            format: { type: "audio/pcmu" },
+            turn_detection: {
+              //type: "semantic_vad",
+              //eagerness: "low",
 
-          type: "server_vad",
-          threshold: 0.6,             // Sensibilidad al volumen (0.0 a 1.0)
-          prefix_padding_ms: 300,     // Margen de audio previo capturado
-          silence_duration_ms: 1500   // Silencio requerido para cortar (1000 a 1500ms recomendado)
+              type: "server_vad",
+              threshold: 0.6,             // Sensibilidad al volumen (0.0 a 1.0)
+              prefix_padding_ms: 300,     // Margen de audio previo capturado
+              silence_duration_ms: 1500   // Silencio requerido para cortar (1000 a 1500ms recomendado)
+            },
+
+            // transcription: {
+            //   model: "whisper-1",
+            // },
+          },
+          output: {
+            format: { type: "audio/pcmu" },
+            voice: this.agent.voice,
+            speed: VOICE_SPEED,
+          },
         },
-
-        // input_audio_transcription: {
-        //   model: "whisper-1",
-        // },
-         speed: VOICE_SPEED,
       },
     };
 
@@ -286,7 +293,7 @@ class MediaStream {
   }
 
   forwardAudioToOpenAI(payload) {
-    if (!this.openaiConnection) return;
+    if (!this.openaiConnection || !this.openaiConnection.connected) return;
     if (this.isAISpeaking) return;
 
     // Send mulaw audio directly to OpenAI (no conversion needed with g711_ulaw format)
@@ -323,18 +330,18 @@ class MediaStream {
         log("🎤 USUARIO:", data.transcript);
         break;
 
-      case "response.audio.delta":
+      case "response.output_audio.delta":
         this.isAISpeaking = true;
         this.forwardAudioToTwilio(data.delta);
         break;
 
-      case "response.audio.done":
+      case "response.output_audio.done":
         // All audio chunks sent - send a mark to Twilio to know when playback finishes
         this.sendMarkMessage("ai-speech-done");
         log("� Audio completo enviado, esperando reproducción en Twilio...");
         break;
 
-      case "response.audio_transcript.done":
+      case "response.output_audio_transcript.done":
         log("🤖 IA:", data.transcript);
         break;
 
